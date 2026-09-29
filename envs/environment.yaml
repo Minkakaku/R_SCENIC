@@ -1,0 +1,14 @@
+name: r-scenic
+channels:
+- conda-forge
+- bioconda
+dependencies:
+- r-base>=4.3
+- r-seurat>=5
+- r-pheatmap
+- r-matrixstats
+- r-remotes
+- bioconductor-genie3
+- bioconductor-aucell
+- bioconductor-rcistarget
+- r-yaml

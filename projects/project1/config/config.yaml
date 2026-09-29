@@ -1,0 +1,7 @@
+methods:
+  scenic:
+    input: data/processed/annotated.rds
+    database-dir: data/reference/cisTarget
+    databases: db1.feather,db2.feather
+    output: results/10_scenic
+    object-dir: data/processed/scenic

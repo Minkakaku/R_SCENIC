@@ -1,33 +1,62 @@
-# R-Python-scenic-regulon-workflow-template
+# R_SCENIC
 
-独立转录调控网络分析点。正式入口均位于仓库根目录：
+跨项目复用的 R 公共分析代码库。仓库管理公共方法、默认配置、环境和项目示例；实际项目在 `projects/<项目名>/` 使用这些方法，数据和运行产物不提交 Git。
 
-- scenic_workflow.R：Seurat RDS → gene filtering → GENIE3 → RcisTarget → AUCell → RSS。
-- pyscenic_workflow.py：AnnData h5ad → GRNBoost2 → cisTarget motif pruning → AUCell → RSS。
+本仓库由 `R-Python-scenic-regulon-workflow-template` 按语言拆分；另一语言版本见 [Python_SCENIC](https://github.com/Minkakaku/Python_SCENIC)。保留拆分前提交历史；`legacy/` 和 `source_catalog/` 是原样来源档案，可能包含另一语言，不参与正式执行。
 
-## R SCENIC（旧项目兼容入口）
+## 目录
 
-    Rscript scenic_workflow.R --input annotated.rds --output results/scenic --organism hgnc --database-dir cisTarget --databases db1.feather,db2.feather
+```text
+src/R/       公共分析方法与配置加载器
+config/            公共默认参数与参考配置
+envs/              共享环境定义
+projects/project1/ 示例项目（未运行）
+  config/          项目覆盖、样本表、QC/注释等人工决策
+  workflow/        编号短脚本与分阶段 runner
+  data/processed/  中间对象
+  data/reference/  项目参考资源
+  results/         按分析点保存图表与中文说明
+  logs/            运行记录
+tests/             路径和项目配置检查
+```
 
-R SCENIC 官方仓库已标记 deprecated，新项目优先使用下方 pySCENIC；本入口用于复现既有 R 项目。默认使用 RNA assay 的 counts layer，也可通过 `--layer data` 显式选择非中心化 log-normalized 表达。organism、ranking 数据库和 motif annotations 必须属于同一物种及相容版本。
+## 新项目
 
-创建 Conda 环境后，按官方安装方式补装 R SCENIC：
+在仓库根目录执行：
 
-    Rscript -e "remotes::install_github('aertslab/SCENIC')"
+```bash
+conda env create -f envs/environment.yaml
+Rscript -e "remotes::install_github('aertslab/SCENIC')"
+cp -R projects/project1 projects/my_project
+```
 
-## pySCENIC
+修改 `projects/my_project/config/config.yaml` 和样本/注释表，准备输入对象与参考文件。示例中的物种、reference、root、分组和文件名必须按真实项目核对，不能直接作为生物学结论。
 
-    python pyscenic_workflow.py --input annotated.h5ad --output results/pyscenic --tf-list allTFs.txt --databases db1.feather db2.feather --motif-annotations motifs.tbl
+每个编号脚本可单独执行；脚本从自身位置定位项目，因此复制后不会继续写入 project1。Python 包项目先完成 editable install。
 
-正式脚本按官方三步 CLI 运行，不使用 os.system，不包含固定服务器路径。输出包括 GRNBoost2 adjacency、motif-pruned regulon、AUCell、RSS、带 regulon 活性的 h5ad 和配对 UMAP 图。
+```bash
+Rscript projects/my_project/workflow/10_scenic.R
+```
 
-## 解释边界
+可用步骤：
+- `10_scenic.R`
 
-- 共表达边不是因果调控。
-- motif 富集支持潜在 TF 结合，但不能替代 ChIP、扰动或其他直接实验验证。
-- RSS 表示细胞类型特异性，不是 CON/EXP 生物学重复检验。
-- 数据库版本、物种、基因 ID 和 TF 列表必须在结果说明中记录。
+`run_all.sh` 对主流程只运行到 QC 检查点；独立分析方法需显式选择步骤，避免把不同候选方法混为同一条流程。已运行脚本不改写，重跑新增编号并使用新输出目录。
 
-旧平台脚本和示例原样保存在 legacy/original/；source_catalog/ 仅用于来源追溯。
+## 配置与路径
 
-方法依据：SCENIC（PMID: 28991892）、pySCENIC（PMID: 32561888）及官方文档。
+公共 `config/default.yaml` → `config/reference.yaml` → 项目 `config/config.yaml`，后者覆盖前者。嵌套映射按键合并，列表和标量整体替换。共享方法接收配置/参数，不包含实际项目路径与样本名。项目相对输入输出路径以项目目录为基准；参考文件路径写在配置中。
+
+## 结果与解释
+
+最终图保存同名 PNG/PDF，配套 CSV/TSV 和 `README_results_CN.md` 放在分析点结果目录。中间对象放在 `data/processed/`。细胞或空间 bins 不作为独立生物学重复；条件比较用样本级汇总。方法特有约束见 [AGENTS.md](AGENTS.md) 和公共代码注释。
+
+## 验证
+
+```bash
+Rscript tests/test_project.R
+```
+
+此检查验证配置、路径或安全导入，不运行真实组学分析。完整分析需要对应生信依赖、真实输入数据和人工 QC/注释。
+
+检查独立入口参数而不运行分析：`Rscript projects/my_project/workflow/10_scenic.R --dry-run`。

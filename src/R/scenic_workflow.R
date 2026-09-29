@@ -1,3 +1,5 @@
+# 公共入口可被项目 workflow 调用，也可直接作为 CLI 运行。
+main <- function(cli_args = commandArgs(trailingOnly = TRUE)) {
 #!/usr/bin/env Rscript
 
 # SCENIC R 独立分析入口
@@ -5,9 +7,9 @@
 
 # 功能：读取 --name value 形式的命令行参数。
 arg_value <- function(name, default = NULL) {
-  args <- commandArgs(trailingOnly = TRUE)
-  index <- match(name, args)
-  if (is.na(index) || index == length(args)) default else args[[index + 1L]]
+  args <- cli_args
+  index <- tail(which(args == name), 1L)
+  if (!length(index) || index == length(args)) default else args[[index + 1L]]
 }
 
 # 功能：解析逗号分隔的 cisTarget ranking 数据库文件名。
@@ -103,7 +105,7 @@ run_scenic <- function(
   # 把 regulon AUC 作为独立 assay 写回，不污染 RNA 表达层。
   auc_for_seurat <- t(auc[colnames(obj), , drop = FALSE])
   obj[["SCENIC"]] <- SeuratObject::CreateAssayObject(data = auc_for_seurat)
-  saveRDS(obj, file.path(output_dir, "scenic_annotated.rds"))
+  saveRDS(obj, file.path(object_dir, "scenic_annotated.rds"))
 
   writeLines(
     c(
@@ -124,6 +126,8 @@ run_scenic <- function(
 
 input_rds <- arg_value("--input")
 output_dir <- arg_value("--output")
+object_dir <- arg_value("--object-dir", file.path("data/processed", "scenic"))
+dir.create(object_dir, recursive = TRUE, showWarnings = FALSE)
 database_dir <- arg_value("--database-dir")
 database_files <- arg_value("--databases")
 if (any(vapply(list(input_rds, output_dir, database_dir, database_files), is.null, logical(1)))) {
@@ -142,3 +146,6 @@ run_scenic(
   n_cores = as.integer(arg_value("--cores", "8")),
   min_cell_fraction = as.numeric(arg_value("--min-cell-fraction", "0.01"))
 )
+
+}
+if (sys.nframe() == 0L) main()
