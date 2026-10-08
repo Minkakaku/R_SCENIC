@@ -14,3 +14,4 @@
 - 图保存 PNG/PDF，AUC、RSS、映射和中文说明放同一输出目录。
 - regulon 是计算推断，不作为直接 TF 结合证据。
 - legacy/original/ 和 source_catalog/ 保持原字节。
+- 项目目录统一使用小写 `projects/`；默认分类配色使用固定 NPG 色序，连续与双向数值使用 NPG 衍生渐变，项目显式配色可覆盖默认值。
